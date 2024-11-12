@@ -17,9 +17,12 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "PAGEngineImp.h"
-
+#include "framework.h"
 #include <iostream>
 #include <string>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+#include <filesystem>
 
 namespace pagengine {
 PAGEngineImpl::PAGEngineImpl() {}
@@ -76,11 +79,72 @@ bool PAGEngineImpl::SetPagFileBuffer(const byte* file_buffer, int buffer_length)
     return false;
   }
 
+  //RemoveEmo(file);
 
+  auto background_file = file->copyOriginal();
+  auto forgroud_file = file->copyOriginal();
+  RemoveEmo(background_file);
+  RemoveEmo(forgroud_file);
 
+  auto numVideo = file->numVideos();
+
+  if (numVideo > 0) {
+    background_file->removeLayerAt(0);
+    forgroud_file->removeLayerAt(1);
+
+    DumpFrames(background_file,true);
+    DumpFrames(forgroud_file,false);
+  }
   pag_file_ = file;
   pag_player_->setComposition(pag_file_);
   return false;
+}
+
+void PAGEngineImpl::RemoveEmo(std::shared_ptr<pag::PAGFile>& file) {
+  auto imageLayers = file->getEditableIndices(pag::LayerType::Image);
+
+  for (size_t i = 0; i < imageLayers.size(); i++) {
+    auto layers = file->getLayersByEditableIndex(i, pag::LayerType::Image);
+    for (size_t j = 0; j < layers.size(); j++) {
+      auto bounds = layers[j]->getBounds();
+      VSLog("Image Bounds , left : %f,top : %f,right : %f,bottom : %f", bounds.left,bounds.top,bounds.right,bounds.bottom);
+      auto matrix = layers[j]->getTotalMatrix();
+      file->removeLayer(layers[j]);
+    }
+  }
+}
+
+std::string GetFileNameWithoutExtension(const std::string& filePath) {
+  std::filesystem::path path(filePath);
+  return path.stem().string();
+}
+
+void PAGEngineImpl::DumpFrames(std::shared_ptr<pag::PAGFile>& file,
+                               bool isBackground) {
+  auto layer = file->getLayerAt(0)->parent();
+  VSLog("video name:", file->layerName().c_str());
+  auto decoder = pag::PAGDecoder::MakeFrom(layer);
+  const int rowSize = decoder->width() * 4;
+  const int size = decoder->height() * rowSize;
+  std::vector<uint8_t> bytes(size);
+  auto fileNameStr = file->path();
+  std::filesystem::path filePath(fileNameStr);
+  auto parentDir = filePath.parent_path();
+  std::filesystem::path newDir;
+  if (isBackground) {
+    newDir = parentDir / "background";
+  } else {
+    newDir = parentDir / "foreground";
+  }
+  std::filesystem::create_directory(newDir);
+
+  for (size_t i = 0; i < decoder->numFrames(); i++) {
+    decoder->readFrame(i, (void*)bytes.data(), rowSize);
+    stbi_write_png((newDir / (std::to_string(i) + ".png")).string().c_str(), decoder->width(),
+                   decoder->height(), 4,
+                   bytes.data(),
+                   rowSize);
+  }
 }
 
 bool PAGEngineImpl::IsPagFileValid() {

@@ -31,6 +31,9 @@ class PAGENGINE_API PAGEngineImpl : public PAGEngine {
   bool InitOnscreenRender(PAGEngineInitData init_data) override;
   bool SetPagFile(const char* file_path, int path_length) override;
   bool SetPagFileBuffer(const byte* file_buffer, int buffer_length) override;
+  void RemoveEmo(std::shared_ptr<pag::PAGFile>& file);
+  void DumpFrames(std::shared_ptr<pag::PAGFile>& background_file,
+                  bool isBackground);
   bool IsPagFileValid() override;
   bool SetProgress(double percent) override;
   bool Flush(bool animating) override;

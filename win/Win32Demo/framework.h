@@ -29,8 +29,21 @@
 #include <memory.h>
 #include <stdlib.h>
 #include <tchar.h>
-
+#include <vector>
 // Windows 头文件
 #include <windows.h>
 
 #include "targetver.h"
+
+inline void VSLog(const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+
+  int length = _vscprintf(format, args) + 1;
+  std::vector<char> buffer(length);
+  vsnprintf(buffer.data(), length, format, args);
+
+  va_end(args);
+
+  OutputDebugStringA(buffer.data());
+}
