@@ -110,4 +110,6 @@ class Win32Window {
   HWND child_content_ = nullptr;
 
   bool test_layered_window = false;
+
+  virtual void OnCommand(WPARAM wParam, LPARAM lParam){};
 };

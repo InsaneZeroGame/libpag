@@ -31,6 +31,7 @@ class Win32ExampleWindow : public Win32Window, public pagengine::PAGEngineCallba
   void SetTimer(int timer_id, int elapse);
 
   void OnCreate() override;
+  void OnFileChange(std::string& test_pag_file_path);
   void OnDestroy() override;
   void DoPaint(HDC hdc) override;
   void OnTimer(int timer_id) override;
@@ -41,4 +42,7 @@ class Win32ExampleWindow : public Win32Window, public pagengine::PAGEngineCallba
 
  private:
   pagengine::PAGEngine* pag_engine_ = nullptr;
+
+  void OnCommand(WPARAM wParam, LPARAM lParam) override;
+  void OpenFile();
 };

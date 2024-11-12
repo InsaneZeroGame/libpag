@@ -156,6 +156,9 @@ Win32Window::MessageHandler(HWND hwnd, UINT const message, WPARAM const wparam,
       DoPaint(hdc);
       EndPaint(hwnd, &ps);
     } break;
+    case WM_COMMAND:
+      OnCommand(wparam, lparam);
+      break;
     case WM_TIMER:
       OnTimer(static_cast<int>(wparam));
       break;

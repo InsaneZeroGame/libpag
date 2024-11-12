@@ -76,6 +76,8 @@ bool PAGEngineImpl::SetPagFileBuffer(const byte* file_buffer, int buffer_length)
     return false;
   }
 
+
+
   pag_file_ = file;
   pag_player_->setComposition(pag_file_);
   return false;

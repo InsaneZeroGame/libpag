@@ -27,6 +27,18 @@ void Win32ExampleWindow::SetTimer(int timer_id, int elapse) {
 }
 
 void Win32ExampleWindow::OnCreate() {
+
+    // Create the menu
+  HMENU hMenu = CreateMenu();
+  HMENU hFileMenu = CreateMenu();
+
+  AppendMenu(hFileMenu, MF_STRING, 1, L"Open");
+  AppendMenu(hFileMenu, MF_STRING, 2, L"Exit");
+
+  AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hFileMenu, L"File");
+
+  SetMenu(window_handle_, hMenu);
+
   Size size = GetWindowSize();
   pag_engine_ = pagengine::CreatePAGEngine();
   pagengine::PAGEngineInitData init_data;
@@ -40,6 +52,10 @@ void Win32ExampleWindow::OnCreate() {
   std::vector<int> ttcIndices = {0, 0};
   pag::PAGFont::SetFallbackFontPaths(fontPaths, ttcIndices);
   std::string test_pag_file_path = "../../assets/test2.pag";
+  OnFileChange(test_pag_file_path);
+}
+
+void Win32ExampleWindow::OnFileChange(std::string& test_pag_file_path) {
   auto byte_data = pag::ByteData::FromPath(test_pag_file_path);
   if (byte_data == nullptr) {
     return;
@@ -63,7 +79,45 @@ void Win32ExampleWindow::OnTimer(int timer_id) {
 }
 
 void Win32ExampleWindow::OnSize(int w, int h) {
-  pag_engine_->Resize(w, h);
+  if (pag_engine_) {
+    pag_engine_->Resize(w, h);
+  }
 }
 
 void Win32ExampleWindow::OnPagPlayEnd() {}
+
+
+void Win32ExampleWindow::OnCommand(WPARAM wParam, LPARAM lParam) {
+  switch (LOWORD(wParam)) {
+    case 1:  // Open
+      OpenFile();
+      break;
+    case 2:  // Exit
+      PostQuitMessage(0);
+      break;
+  }
+}
+
+void Win32ExampleWindow::OpenFile() {
+  OPENFILENAME ofn;
+  wchar_t szFile[260] = {0};
+  ZeroMemory(&ofn, sizeof(ofn));
+  ofn.lStructSize = sizeof(ofn);
+  ofn.hwndOwner = window_handle_;
+  ofn.lpstrFile = szFile;
+  ofn.nMaxFile = sizeof(szFile);
+  ofn.lpstrFilter = L"Pag\0*.pag\0";
+  ofn.nFilterIndex = 1;
+  ofn.lpstrFileTitle = NULL;
+  ofn.nMaxFileTitle = 0;
+  ofn.lpstrInitialDir = NULL;
+  ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+  if (GetOpenFileName(&ofn) == TRUE) {
+    // Convert wchar_t to std::string
+    std::wstring ws(szFile);
+    std::string filePath(ws.begin(), ws.end());
+    // Handle the file open logic here
+    OnFileChange(filePath);
+  }
+}
